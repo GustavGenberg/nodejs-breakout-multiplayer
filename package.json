@@ -1,0 +1,22 @@
+{
+  "name": "nodejs-breakout-multiplayer",
+  "version": "0.0.0",
+  "description": "A simple socket.io multiplayer game",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GustavGenberg/nodejs-breakout-multiplayer"
+  },
+  "author": "Gustav Genberg",
+  "license": "GNU 3.0",
+  "bugs": {
+    "url": "https://github.com/GustavGenberg/nodejs-breakout-multiplayer/issues"
+  },
+  "dependencies": {
+    "express": "^4.13.4",
+    "socket.io": "^1.4.5"
+  }
+}
