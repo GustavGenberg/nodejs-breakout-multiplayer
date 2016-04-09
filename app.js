@@ -27,7 +27,7 @@ object.sockets = {};
 object.balls = {};
 var interval = [];
 interval.cooldown = {};
-interval.cooldown.playerMove = false;
+interval.cooldown.playerMove = [];
 
 io.on('connection', function (socket) {
 
@@ -39,9 +39,17 @@ io.on('connection', function (socket) {
 
   object.sockets[count.players].emit('config', config);
 
-  object.players[count.players] = new Player (count.players, 'Unnamed' + Math.floor(Math.random() * 20), 1);
-
-  startGame();
+  if(count.players == 1) {
+    object.players[count.players] = new Player (count.players, 'Unnamed' + Math.floor(Math.random() * 20), 0);
+    object.sockets[count.players].emit('info', {id: count.players, msg: 'Welcome! You are player 1 (the left one)'});
+  }
+  if(count.players == 2) {
+    startGame();
+    object.players[count.players] = new Player (count.players, 'Unnamed' + Math.floor(Math.random() * 20), 1);
+    object.sockets[count.players].emit('info', {id: count.players, msg: 'Welcome! You are player 2 (the right one)'});
+  } else if(count.players > 2) {
+    object.sockets[count.players].emit('info', {id: count.players, msg: 'Server is full. You can only watch as the other plays'});
+  }
 
 });
 
@@ -60,6 +68,8 @@ var Player = function (id, nickname, position) {
   }
 
   this.y = (config.canvas_height / 2) - (config.player_height / 2);
+
+  interval.cooldown.playerMove[this.id] = false;
 
   this.init();
 
@@ -81,11 +91,12 @@ Player.prototype = {
       delete object.sockets[player.id];
       delete object.players[player.id];
       endGame();
+      io.emit('reset', {winner: 3 - player.id});
     });
     socket.on('activeKey', function (data) {
 
-      if(interval.cooldown.playerMove == false) {
-        interval.cooldown.playerMove = true;
+      if(interval.cooldown.playerMove[player.id] == false) {
+        interval.cooldown.playerMove[player.id] = true;
         if(data.activeKey[38] == true) {
           if(player.y > 0) {
             player.y = player.y - config.player_speed;
@@ -97,7 +108,7 @@ Player.prototype = {
           }
         }
         setTimeout(function () {
-          interval.cooldown.playerMove = false;
+          interval.cooldown.playerMove[player.id] = false;
         }, config.player_interval - 10);
       }
 
@@ -154,10 +165,18 @@ Ball.prototype = {
       }
 
       if (ball.x >= config.canvas_width - config.ball_radius) {
-        ball.dx = false;
+        //ball.dx = false;
+
+        endGame();
+
+        io.emit('reset', {winner: 1, looser: 2});
       }
       if (ball.x - config.ball_radius <= 0) {
-        ball.dx = true;
+        //ball.dx = true;
+
+        endGame();
+
+        io.emit('reset', {winner: 2, looser: 1});
       }
 
       for(player in object.players) {
@@ -166,6 +185,8 @@ Ball.prototype = {
             && ball.y < object.players[player].y + config.player_height
             && ball.y > object.players[player].y) {
             ball.dx = true;
+            config.ball_speed = config.ball_speed + config.ball_increase_on_hit;
+            io.emit('ball-speed', config.ball_speed);
           }
         }
 
@@ -174,6 +195,8 @@ Ball.prototype = {
             && ball.y < object.players[player].y + config.player_height
             && ball.y > object.players[player].y) {
             ball.dx = false;
+            config.ball_speed = config.ball_speed + config.ball_increase_on_hit;
+            io.emit('ball-speed', config.ball_speed);
           }
         }
       }
@@ -196,8 +219,13 @@ var startGame = function () {
 
 var endGame = function () {
   count.ball = 0;
+  count.players = 0;
   for(ball in object.balls) {
     delete object.balls[ball];
   }
+  for(player in object.players) {
+    delete object.players[player];
+  }
+  clearInterval(interval.ball);
   clearInterval(interval.game);
 };

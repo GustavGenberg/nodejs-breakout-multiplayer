@@ -6,7 +6,6 @@ config.socket_port = '2222';
 var activeKey = {};
 var canvas, ctx;
 var client = [];
-client.frames_counter = 0;
 
 function loadScript(url, callback) {
 	var head = document.getElementsByTagName('head')[0];
@@ -22,6 +21,11 @@ loadScript('http://code.jquery.com/jquery-2.2.2.min.js', function () {
     socket = io(config.socket_host + ':' + config.socket_port);
     socket.on('config', function (data) {
       config = data;
+
+      client.ball_speed = config.ball_speed;
+      client.msg = '';
+      client.frames_counter = 0;
+
       init();
     });
   });
@@ -36,33 +40,58 @@ var bindSockets = function () {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (player in data.players) {
       ctx.beginPath();
-
       ctx.fillStyle = '#FFF';
       ctx.fillRect(data.players[player].x, data.players[player].y, config.player_width, config.player_height);
-
       ctx.closePath();
     }
 
     for(ball in data.balls) {
       ctx.beginPath();
-
       ctx.arc(data.balls[ball].x, data.balls[ball].y, config.ball_radius, 0, Math.PI * 2);
       ctx.fillStyle = 'rgb(29, 24, 230)';
       ctx.fill();
-
       ctx.closePath();
     }
 
     ctx.beginPath();
-
     ctx.fillStyle = '#f00';
     ctx.fillText('FPS: ' + config.client_fps + ' / ' + config.map_fps, 5, 15);
+    ctx.closePath();
 
+    ctx.beginPath();
+    ctx.fillStyle = '#f00';
+    ctx.fillText(client.msg, (canvas.width / 2) - (client.msg.length / 2 * 4), 15);
+    ctx.closePath();
+
+    ctx.beginPath();
+    ctx.fillStyle = '#f00';
+    ctx.fillText('BS: ' + Math.floor(client.ball_speed), 5, canvas.height);
     ctx.closePath();
 
     client.frames_counter++;
 
   });
+  socket.on('info', function (data) {
+    client.msg = data.msg;
+		client.id = data.id;
+  });
+  socket.on('ball-speed', function (data) {
+    client.ball_speed = data;
+  });
+	socket.on('reset', function (data) {
+		//ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		ctx.beginPath();
+		ctx.font = '40px Courier';
+		if(client.id == data.winner) {
+			ctx.fillText('You Won!', 50, 150);
+		} else if(client.id == data.looser) {
+			ctx.fillText('You Lost!', 50, 150);
+		} else {
+			ctx.fillText('Game over!', 50, 150);
+		}
+		ctx.closePath();
+	});
   socket.on('disconnect', function () {
     window.location.reload();
   });

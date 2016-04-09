@@ -15,6 +15,7 @@ module.exports = {
   ball_radius: 10,
   ball_speed: 5,
   ball_interval: 30,
+  ball_increase_on_hit: 0.1,
 
 
 
