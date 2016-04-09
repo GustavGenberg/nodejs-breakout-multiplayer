@@ -91,6 +91,10 @@ var bindSockets = function () {
 			ctx.fillText('Game over!', 50, 150);
 		}
 		ctx.closePath();
+
+		setTimeout(function () {
+			location.reload();
+		}, 1000);
 	});
   socket.on('disconnect', function () {
     window.location.reload();
